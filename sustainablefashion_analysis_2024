@@ -1,0 +1,148 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load dataset
+file_path = "/Users/luizasodre/Documents/Python/sustainable_fashion_trends_2024.csv"
+df = pd.read_csv(file_path)
+
+# Data Cleaning
+# Convert categorical columns to proper format
+df['Sustainability_Rating'] = df['Sustainability_Rating'].astype('category')
+df['Market_Trend'] = df['Market_Trend'].astype('category')
+df['Eco_Friendly_Manufacturing'] = df['Eco_Friendly_Manufacturing'].map({'Yes': 1, 'No': 0})
+df['Recycling_Programs'] = df['Recycling_Programs'].map({'Yes': 1, 'No': 0})
+
+# Summary statistics
+print("Dataset Overview:\n", df.info())
+print("\nSummary Statistics:\n", df.describe())
+
+# Data Visualization
+# Set the style for plots
+sns.set_style("whitegrid")
+
+# Aggregate data by year
+trend_data = df.groupby("Year").agg({
+    "Sustainability_Rating": lambda x: x.mode()[0],  # Most common rating per year
+    "Carbon_Footprint_MT": "mean",
+    "Water_Usage_Liters": "mean",
+    "Waste_Production_KG": "mean"
+}).reset_index()
+
+# Plot trends over time
+fig, axes = plt.subplots(4, 1, figsize=(12, 16), sharex=True)
+
+# Sustainability Rating Trend
+sns.lineplot(data=trend_data, x="Year", y="Sustainability_Rating", marker="o", ax=axes[0])
+axes[0].set_title("Most Common Sustainability Rating Over Time")
+
+# Carbon Footprint Trend
+sns.lineplot(data=trend_data, x="Year", y="Carbon_Footprint_MT", marker="o", ax=axes[1], color="red")
+axes[1].set_title("Average Carbon Footprint Over Time (Metric Tons)")
+
+# Water Usage Trend
+sns.lineplot(data=trend_data, x="Year", y="Water_Usage_Liters", marker="o", ax=axes[2], color="blue")
+axes[2].set_title("Average Water Usage Over Time (Liters)")
+
+# Waste Production Trend
+sns.lineplot(data=trend_data, x="Year", y="Waste_Production_KG", marker="o", ax=axes[3], color="green")
+axes[3].set_title("Average Waste Production Over Time (KG)")
+
+plt.xlabel("Year")
+plt.tight_layout()
+plt.show()
+
+# Aggregate data by country
+country_comparison = df.groupby("Country").agg({
+    "Sustainability_Rating": lambda x: x.mode()[0],  # Most common rating per country
+    "Carbon_Footprint_MT": "mean",
+    "Water_Usage_Liters": "mean",
+    "Waste_Production_KG": "mean",
+    "Market_Trend": lambda x: x.mode()[0]  # Most common market trend per country
+}).reset_index()
+
+# Sort by sustainability rating (categorical ordering: A > B > C > D)
+rating_order = ["A", "B", "C", "D"]
+country_comparison["Sustainability_Rating"] = pd.Categorical(
+    country_comparison["Sustainability_Rating"], categories=rating_order, ordered=True
+)
+country_comparison = country_comparison.sort_values("Sustainability_Rating")
+
+# Plot country comparisons
+fig, axes = plt.subplots(3, 1, figsize=(12, 18))
+
+# Sustainability Ratings per Country
+sns.barplot(
+    data=country_comparison, 
+    x="Sustainability_Rating", 
+    y="Country", 
+    order=rating_order, 
+    ax=axes[0], 
+    palette="coolwarm"
+)
+axes[0].set_title("Most Common Sustainability Rating by Country")
+
+# Environmental Impact per Country
+sns.barplot(data=country_comparison, x="Carbon_Footprint_MT", y="Country", ax=axes[1], color="red")
+axes[1].set_title("Average Carbon Footprint per Country (Metric Tons)")
+
+# Water Usage per Country
+sns.barplot(data=country_comparison, x="Water_Usage_Liters", y="Country", ax=axes[2], color="blue")
+axes[2].set_title("Average Water Usage per Country (Liters)")
+
+plt.tight_layout()
+plt.show()
+
+# Display the market trend comparison
+country_comparison[["Country", "Market_Trend"]]
+
+# Aggregate data by material type
+material_impact = df.groupby("Material_Type").agg({
+    "Carbon_Footprint_MT": "mean",
+    "Water_Usage_Liters": "mean",
+    "Waste_Production_KG": "mean"
+}).reset_index()
+
+# Sort materials by carbon footprint
+material_impact = material_impact.sort_values("Carbon_Footprint_MT")
+
+# Plot material impact comparisons
+fig, axes = plt.subplots(3, 1, figsize=(12, 18))
+
+# Carbon Footprint by Material Type
+sns.barplot(data=material_impact, x="Carbon_Footprint_MT", y="Material_Type", ax=axes[0], palette="Reds_r")
+axes[0].set_title("Average Carbon Footprint by Material Type (Metric Tons)")
+
+# Water Usage by Material Type
+sns.barplot(data=material_impact, x="Water_Usage_Liters", y="Material_Type", ax=axes[1], palette="Blues_r")
+axes[1].set_title("Average Water Usage by Material Type (Liters)")
+
+# Waste Production by Material Type
+sns.barplot(data=material_impact, x="Waste_Production_KG", y="Material_Type", ax=axes[2], palette="Greens_r")
+axes[2].set_title("Average Waste Production by Material Type (KG)")
+
+plt.tight_layout()
+plt.show()
+
+# Set figure size
+fig, axes = plt.subplots(3, 1, figsize=(12, 18))
+
+# Price vs Sustainability Rating
+sns.boxplot(data=df, x="Sustainability_Rating", y="Average_Price_USD", order=["A", "B", "C", "D"], ax=axes[0], palette="coolwarm")
+axes[0].set_title("Average Price vs Sustainability Rating")
+
+# Price vs Eco-Friendly Manufacturing
+sns.boxplot(data=df, x="Eco_Friendly_Manufacturing", y="Average_Price_USD", ax=axes[1], palette="pastel")
+axes[1].set_title("Average Price vs Eco-Friendly Manufacturing")
+
+# Price vs Recycling Programs
+sns.boxplot(data=df, x="Recycling_Programs", y="Average_Price_USD", ax=axes[2], palette="muted")
+axes[2].set_title("Average Price vs Recycling Programs")
+
+plt.tight_layout()
+plt.show()
+
+# Save cleaned data
+df.to_csv("/Users/luizasodre/Documents/Python/cleaned_sustainable_fashion_data.csv", index=False)
+print(" Cleaned data saved to cleaned_sustainable_fashion_data.csv")
+
